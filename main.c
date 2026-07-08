@@ -598,7 +598,11 @@ int main(int argc, char** argv)
 	// Print server info
 
 	printf("==============================\n");
-	printf("%-20s: \033[35m%s\033[0m \033[36m(protocol v%d)\033[0m\n", "Version", yyjson_get_str(resStr_versionStr), yyjson_get_int(resStr_versionPrt));
+	{
+	char* versionColored = toSTable(yyjson_get_str(resStr_versionStr));
+	printf("%-20s: \033[35m%s\033[0m \033[36m(protocol v%d)\033[0m\n", "Version", versionColored, yyjson_get_int(resStr_versionPrt));
+	free(versionColored);
+	}
 	{
 	const char* resStr_descStrC = yyjson_get_str(resStr_desc);
 	char*  resStr_descStrColor  = toSTable(resStr_descStrC);
