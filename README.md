@@ -1,4 +1,6 @@
-# The Minecraft Pretty Info Scanning Software (MCPISS)
+![The Minecraft Pretty Info Scanning Software (MCPISS) Logo, yellow water block](logo.png)
+
+<!-- The Minecraft Pretty Info Scanning Software (MCPISS) -->
 Scans Minecraft servers, in pretty fashion.
 
 ## Building
