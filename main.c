@@ -603,6 +603,7 @@ int main(int argc, char** argv)
 	printf("%-20s: \033[35m%s\033[0m \033[36m(protocol v%d)\033[0m\n", "Version", versionColored, yyjson_get_int(resStr_versionPrt));
 	free(versionColored);
 	}
+	if (yyjson_is_str(resStr_desc))
 	{
 	const char* resStr_descStrC = yyjson_get_str(resStr_desc);
 	char*  resStr_descStrColor  = toSTable(resStr_descStrC);
@@ -633,7 +634,8 @@ int main(int argc, char** argv)
 	}
 
 	free(resStr_descStr);
-	}
+	} else
+		fprintf(stderr, "Description is pretty formatted. Thanks, Minecraft.\n");
 	printf("%-20s: %s%ums\033[0m\n", "Ping",
 		 resPing >= MEDIUM_PING ?
 		(resPing >= HIGH_PING ?
