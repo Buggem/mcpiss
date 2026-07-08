@@ -207,7 +207,7 @@ char* toSTable(const char* curStr)
 
 	// P.S. - Yes, I do use Australian English.
 	// It's only spelt "color" for consistency in programming.
-	coloredStr = malloc(newLen+1);
+	coloredStr = calloc(newLen + 1, 1);
 	for (int i = 0; i < curStrLen; i++)
 	{
 		if (i + 1 < curStrLen)
@@ -249,10 +249,8 @@ int main(int argc, char** argv)
 	unsigned long serv_ip = INADDR_LOOPBACK;
 
 	for (int i = 1; i < argc; i++) {
-		if (argv[i] == NULL)
-		{
-			break;
-		}
+		if (argv[i] == NULL) break;
+		size_t argvILen = strlen(argv[i]);
 
 		if (strcmp(argv[i], "--ip") == 0)
 		{
@@ -354,9 +352,16 @@ int main(int argc, char** argv)
 			break;
 		}
 
-		if (strcmp(argv[i], "--verbose") == 0 || strcmp(argv[i], "-v") == 0)
+		if (strcmp(argv[i], "--verbose") == 0) verbose = true;
+
+		if (argvILen >= 2)
+		if (argv[i][0] == '-' && argv[i][1] != '-')
 		{
-			verbose = true;
+			for(int j = 1; j < argvILen; j++)
+			{
+				if(argv[i][j] == 'v') verbose = true;
+				break;
+			}
 		}
 	}
 
@@ -482,7 +487,7 @@ int main(int argc, char** argv)
 		fprintf(stderr, "Likely not a Minecraft server - length of response is beyond 65535.\nExiting...\n");
 		return 1;
 	}
-	resStr = calloc(resLen+1, 1);
+	resStr = calloc(resLen + 1, 1);
 	if ((res_read = read_full(sockfd, resStr, resLen)) == -1)
 	{
 		fprintf(stderr, "Could not read socket: %s\n", strerror(errno));
@@ -598,7 +603,7 @@ int main(int argc, char** argv)
 	const char* resStr_descStrC = yyjson_get_str(resStr_desc);
 	char*  resStr_descStrColor  = toSTable(resStr_descStrC);
 	size_t resStr_descStrLen    = strlen(resStr_descStrColor);
-	char*  resStr_descStr       = malloc(resStr_descStrLen + 1);
+	char*  resStr_descStr       = calloc(resStr_descStrLen + 1, 1);
 	size_t resStr_descNL        = 1;
 
 	memcpy(resStr_descStr, resStr_descStrColor, resStr_descStrLen + 1);
