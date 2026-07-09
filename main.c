@@ -310,11 +310,11 @@ int main(int argc, char** argv)
 	char shakeAddr[255] = {'\0'};
 	if(fakeDNS == NULL)
 	{
-		snprintf(shakeAddr, sizeof(shakeAddr), "%d.%d.%d.%d",
-			(serv_ip >> 24) & 0xff,
-			(serv_ip >> 16) & 0xff,
-			(serv_ip >>  8) & 0xff,
-			(serv_ip      ) & 0xff
+		snprintf(shakeAddr, sizeof(shakeAddr), "%u.%u.%u.%u",
+			(unsigned char)((serv_ip >> 24) & 0xff),
+			(unsigned char)((serv_ip >> 16) & 0xff),
+			(unsigned char)((serv_ip >>  8) & 0xff),
+			(unsigned char)((serv_ip      ) & 0xff)
 		);
 	} else {
 		snprintf(shakeAddr, sizeof(shakeAddr), "%s",
@@ -551,7 +551,7 @@ int main(int argc, char** argv)
 		: "\033[31m")
 		: "\033[33m")
 		: "\033[32m",
-		resPing);
+		(unsigned int)resPing);
 	{
 	int playersCur = resStr_playersCur != NULL ? yyjson_get_int(resStr_playersCur) : 0,
 	    playersMax = resStr_playersMax != NULL ? yyjson_get_int(resStr_playersMax) : 0;
