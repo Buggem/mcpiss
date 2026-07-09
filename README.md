@@ -10,12 +10,10 @@ You'll need the yyjson devel packages and the library itself.
 Static or dynamic linking are both fine, however this tutorial will only show dynamic linking for simplicity.
 
 ```
-gcc main.c -lyyjson -o mcpiss
+gcc *.c -I./ -lyyjson -o mcpiss
 ```
 
 ## Usage
-You can
-
 The tool has several command line options, however none are documented by an in-executable usage prompt at this time.
 
 This will definitely change in the future.
