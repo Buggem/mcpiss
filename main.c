@@ -33,6 +33,8 @@
 
 #include <yyjson.h>
 
+#include "mcformat.h"
+
 // compat - thanks, SO
 #if __BIG_ENDIAN__
     #define htonll(x)   (x)
@@ -136,104 +138,6 @@ int writeVarInt(unsigned int value, int sockfd, bool onlyComputeLen)
 	computedLen++;
 
 	return computedLen;
-}
-
-// MC color coding + formatting
-#define S_TABLE_CHAR '\xa7'
-//char* sTableStr = "\xa7";
-char* sTable[256];
-void initSTable()
-{
-	memset(sTable, 0, sizeof(sTable));
-	sTable['0'] = "\033[30m";
-	sTable['1'] = "\033[34m";
-	sTable['2'] = "\033[32m";
-	sTable['3'] = "\033[36m";
-	sTable['4'] = "\033[31m";
-	sTable['5'] = "\033[35m";
-	sTable['6'] = "\033[33m";
-	sTable['7'] = "\033[37m";
-	sTable['8'] = "\033[90m";
-	sTable['9'] = "\033[94m";
-	sTable['a'] = "\033[92m";
-	sTable['b'] = "\033[96m";
-	sTable['c'] = "\033[91m";
-	sTable['d'] = "\033[95m";
-	sTable['e'] = "\033[93m";
-	sTable['f'] = "\033[97m";
-
-	sTable['k'] = "x";
-	sTable['l'] = "\033[1m";
-	sTable['m'] = "\033[9m";
-	sTable['n'] = "\033[4m";
-	sTable['o'] = "\033[3m";
-	sTable['r'] = "\033[0m";
-}
-
-char* toSTable(const char* curStr)
-{
-	char* coloredStr = NULL;
-	size_t curStrLen = strlen(curStr);
-	size_t newLen    = curStrLen;
-
-	// get size of new string
-	for (int i = 0; i < curStrLen; i++)
-	{
-		//printf("%-4u | %-2c - %-4u\n", (unsigned char)curStr[i], curStr[i], (unsigned char)S_TABLE_CHAR);
-		if (i + 1 < curStrLen)
-		if (curStr[i + 1] == S_TABLE_CHAR && (curStr[i] & 0x80) != 0)
-		{
-			newLen--;
-			continue;
-		}
-
-		if (curStr[i] == S_TABLE_CHAR)
-		if (i + 1 < curStrLen)
-		{
-			i++;
-			//printf("%d\n", sTable[curStr[i]]);
-			if (sTable[curStr[i]] != NULL)
-			{
-				newLen += strlen(sTable[curStr[i]]);
-				newLen -= 2;
-				//if (verbose) printf("[ %d -> %d ]\n", curStrLen, newLen);
-			}
-
-			continue;
-		}
-	}
-
-	// Actually colour the string
-
-	// P.S. - Yes, I do use Australian English.
-	// It's only spelt "color" for consistency in programming.
-	coloredStr = calloc(newLen + 1, 1);
-	for (int i = 0; i < curStrLen; i++)
-	{
-		if (i + 1 < curStrLen)
-		if (curStr[i + 1] == S_TABLE_CHAR && (curStr[i] & 0x80) != 0)
-		{
-			continue;
-		}
-
-		if (curStr[i] == S_TABLE_CHAR)
-		if (i + 1 < curStrLen)
-		{
-			i++;
-			if (sTable[curStr[i]] != NULL)
-			{
-				strcat(coloredStr, sTable[curStr[i]]);
-			}
-
-			continue;
-		}
-
-		// concat the char if it's not before the S_TABLE_CHAR and has a high flag set,
-		// or S_TABLE_CHAR itself, or a valid sTable after S_TABLE_CHAR
-		strncat(coloredStr, &curStr[i], 1);
-	}
-
-	return coloredStr;
 }
 
 int main(int argc, char** argv)
@@ -498,6 +402,12 @@ int main(int argc, char** argv)
 		return 1;
 	}
 
+#ifdef CUSTOM_RESPONSE
+	free(resStr);
+
+	resStr = "{}";
+	resLen = strlen(resStr);
+#endif
 	resStr_doc = yyjson_read(resStr, resLen, 0);
 	if(resStr_doc == NULL)
 	{
@@ -585,57 +495,54 @@ int main(int argc, char** argv)
 
 	yyjson_val *resStr_desc       = yyjson_obj_get(resStr_root, "description");
 	yyjson_val *resStr_players    = yyjson_obj_get(resStr_root, "players");
-	yyjson_val *resStr_playersLst = yyjson_obj_get(resStr_players, "sample");
-	yyjson_val *resStr_playersCur = yyjson_obj_get(resStr_players, "online");
-	yyjson_val *resStr_playersMax = yyjson_obj_get(resStr_players, "max");
+	yyjson_val *resStr_playersLst = resStr_players != NULL ? yyjson_obj_get(resStr_players, "sample") : NULL;
+	yyjson_val *resStr_playersCur = resStr_players != NULL ? yyjson_obj_get(resStr_players, "online") : NULL;
+	yyjson_val *resStr_playersMax = resStr_players != NULL ? yyjson_obj_get(resStr_players, "max")    : NULL;
 	yyjson_val *resStr_version    = yyjson_obj_get(resStr_root, "version");
-	yyjson_val *resStr_versionStr = yyjson_obj_get(resStr_version, "name");
-	yyjson_val *resStr_versionPrt = yyjson_obj_get(resStr_version, "protocol");
+	yyjson_val *resStr_versionStr = resStr_version != NULL ? yyjson_obj_get(resStr_version, "name")     : NULL;
+	yyjson_val *resStr_versionPrt = resStr_version != NULL ? yyjson_obj_get(resStr_version, "protocol") : NULL;
 	yyjson_val *resStr_secChat    = yyjson_obj_get(resStr_root, "enforcesSecureChat");
-	int playersCur = yyjson_get_int(resStr_playersCur),
-	    playersMax = yyjson_get_int(resStr_playersMax);
 
 	// Print server info
 
 	printf("==============================\n");
 	{
-	char* versionColored = toSTable(yyjson_get_str(resStr_versionStr));
-	printf("%-20s: \033[35m%s\033[0m \033[36m(protocol v%d)\033[0m\n", "Version", versionColored, yyjson_get_int(resStr_versionPrt));
-	free(versionColored);
+	char* versionColored = resStr_versionStr != NULL ? toSTable(yyjson_get_str(resStr_versionStr)) : "\033[90mOld\033[0m";
+	printf("%-20s: \033[35m%s\033[0m \033[36m(protocol v%d)\033[0m\n", "Version", versionColored, resStr_versionPrt != NULL ? yyjson_get_int(resStr_versionPrt) : -1);
+	if (resStr_versionStr != NULL) free(versionColored);
 	}
 	if (yyjson_is_str(resStr_desc))
 	{
-	const char* resStr_descStrC = yyjson_get_str(resStr_desc);
-	char*  resStr_descStrColor  = toSTable(resStr_descStrC);
-	size_t resStr_descStrLen    = strlen(resStr_descStrColor);
-	char*  resStr_descStr       = calloc(resStr_descStrLen + 1, 1);
-	size_t resStr_descNL        = 1;
+		const char* resStr_descStrC = yyjson_get_str(resStr_desc);
+		char*  resStr_descStrColor  = toSTable(resStr_descStrC);
+		size_t resStr_descStrLen    = strlen(resStr_descStrColor);
+		char*  resStr_descStr       = calloc(resStr_descStrLen + 1, 1);
+		size_t resStr_descNL        = 1;
 
-	memcpy(resStr_descStr, resStr_descStrColor, resStr_descStrLen + 1);
-	free(resStr_descStrColor);
+		memcpy(resStr_descStr, resStr_descStrColor, resStr_descStrLen + 1);
+		free(resStr_descStrColor);
 
-	for (size_t i = 0; resStr_descStr[i] != 0; i++)
-	{
-		if (resStr_descStr[i] == '\n')
+		for (size_t i = 0; resStr_descStr[i] != 0; i++)
 		{
-			resStr_descStr[i] = 0;
-			resStr_descNL++;
+			if (resStr_descStr[i] == '\n')
+			{
+				resStr_descStr[i] = 0;
+				resStr_descNL++;
+			}
 		}
-	}
 
-	for (size_t p = 0, i = 0; i < resStr_descNL; i++, p += strlen(resStr_descStr + p) + 1)
-	{
-		if (i == 0)
-			printf("%-20s: ", "Description");
-		else
-			printf("%-20s: ", "");
+		for (size_t p = 0, i = 0; i < resStr_descNL; i++, p += strlen(resStr_descStr + p) + 1)
+		{
+			if (i == 0) printf("%-20s: ", "Description");
+			else printf("%-20s: ", "");
 
-		printf("%s\033[0m\n", resStr_descStr + p);
-	}
+			printf("%s\033[0m\n", resStr_descStr + p);
+		}
 
-	free(resStr_descStr);
-	} else
+		free(resStr_descStr);
+	} else if(resStr_desc != NULL)
 		fprintf(stderr, "Description is pretty formatted. Thanks, Minecraft.\n");
+
 	printf("%-20s: %s%ums\033[0m\n", "Ping",
 		 resPing >= MEDIUM_PING ?
 		(resPing >= HIGH_PING ?
@@ -645,40 +552,70 @@ int main(int argc, char** argv)
 		: "\033[33m")
 		: "\033[32m",
 		resPing);
-	printf("%-20s: %s%d/%d\033[0m\n", "Players",
-		 playersCur >= ( playersMax      / 2) ?
+	{
+	int playersCur = resStr_playersCur != NULL ? yyjson_get_int(resStr_playersCur) : 0,
+	    playersMax = resStr_playersMax != NULL ? yyjson_get_int(resStr_playersMax) : 0;
+	printf("%-20s: %s", "Players",
+		((resStr_playersCur != NULL) && (resStr_playersMax != NULL)) ?
+		(playersCur >= ( playersMax      / 2) ?
 		(playersCur >= ((playersMax * 3) / 4) ?
 		(playersCur ==   playersMax
 		? "\033[1;31m"
 		: "\033[31m")
 		: "\033[33m")
-		: "",
-		playersCur,
-		playersMax
+		: "") : ""
 	);
 
+	// get info on players
+	if (resStr_playersCur != NULL)
+		printf("%d", playersCur);
+	else
+		printf("???");
+	if (resStr_playersMax != NULL)
+		printf("/%d\033[0m\n", playersMax);
+	else
+		printf("/???\033[0m\n");
+
+	// scan players
+	if (resStr_playersLst != NULL)
 	{
-	size_t idx, max;
-	yyjson_val *player;
-	yyjson_arr_foreach(resStr_playersLst, idx, max, player)
-	{
-		if(idx == 0)
+		size_t idx, max;
+		yyjson_val *player;
+		yyjson_arr_foreach(resStr_playersLst, idx, max, player)
 		{
-			printf("^--------,\n");
+			if(idx == 0)
+			{
+				printf("^--------,\n");
+			}
+
+			yyjson_val *playerName = yyjson_obj_get(player, "name");
+			yyjson_val *playerId   = yyjson_obj_get(player, "id");
+
+			printf("%-9s%-10d : ", "", (int)idx);
+			if (playerName != NULL)
+			{
+				char* playerNameStr    = toSTable(yyjson_get_str(playerName));
+				printf("%-16s\033[0m", playerNameStr);
+				if (playerId)
+					printf(" {%s}", yyjson_get_str(playerId));
+				printf("\n");
+				free(playerNameStr);
+			} else if(playerId != NULL)
+			{
+				printf("%-16s\033[0m {%s}\n", "Unnamed", yyjson_get_str(playerId));
+			} else
+				printf("No Information\n");
 		}
-
-		yyjson_val *playerName = yyjson_obj_get(player, "name");
-		yyjson_val *playerId   = yyjson_obj_get(player, "id");
-		char* playerNameStr    = toSTable(yyjson_get_str(playerName));
-		printf("%-9s%-11d: %-16s\033[0m (%s)\n", "", (int)idx, playerNameStr, yyjson_get_str(playerId));
-		free(playerNameStr);
-	}
 	}
 
-	printf("%-20s: %s\033[0m\n", "Secure Chat", yyjson_get_bool(resStr_secChat) ? "\033[32mEnforced\033[0m" : "\033[31mOff\033[0m");
+	}
+
+	printf("%-20s: %s\033[0m\n", "Secure Chat", resStr_secChat == NULL ? "\033[90mUnspecified\033[0m" : (yyjson_get_bool(resStr_secChat) ? "\033[32mEnforced\033[0m" : "\033[31mOff\033[0m"));
 
 	yyjson_doc_free(resStr_doc);
+#ifndef CUSTOM_RESPONSE
 	free(resStr);
+#endif
 	close(sockfd);
 
 	return 0;
