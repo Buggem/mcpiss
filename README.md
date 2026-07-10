@@ -1,13 +1,15 @@
 ![The Minecraft Pretty Info Scanning Software (MCPISS) Logo, yellow water block](logo.png)
 
 <!-- The Minecraft Pretty Info Scanning Software (MCPISS) -->
-Scans Minecraft servers, in pretty fashion.
+**Scans Minecraft servers, in pretty fashion.**
 
 ## Building
 The software only supports Linux-based operating systems at this time, however this may change in the future.
 
 You'll need the yyjson devel packages and the library itself.
 Static or dynamic linking are both fine, however this tutorial will only show dynamic linking for simplicity.
+
+There is also an option to disable experimental and likely unstable text component parsing. Append `-DNO_MCTEXT_COMPONENTS` to your compiler arguments or add define `NO_MCTEXT_COMPONENTS` in a header.
 
 ```
 gcc *.c -I./ -lyyjson -o mcpiss
