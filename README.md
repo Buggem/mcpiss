@@ -9,12 +9,21 @@ The software only supports Linux-based operating systems at this time, however t
 You'll need the yyjson devel packages and the library itself.
 Static or dynamic linking are both fine, however this tutorial will only show dynamic linking for simplicity.
 
-There is also an option to disable experimental and likely unstable text component parsing. Append `-DNO_MCTEXT_COMPONENTS` to your compiler arguments or add define `NO_MCTEXT_COMPONENTS` in a header.
+There is also an option to disable experimental and likely unstable text component parsing.
+Append `-DNO_MCTEXT_COMPONENTS` to CFLAGS (`make CFLAGS="-DNO_MCTEXT_COMPONENTS"`) or define `NO_MCTEXT_COMPONENTS` in a header.
 
 ```
-gcc *.c -I./ -lyyjson -o mcpiss
+make
 ```
 
+Use `make clean` to remove the executable and .o files.
+
+## Installation
+Installation is not necessary for the program to function, but is an optional method to get it into your `PATH`.
+
+```
+sudo make install
+```
 ## Usage
 The tool has several command line options, however none are documented by an in-executable usage prompt at this time.
 
