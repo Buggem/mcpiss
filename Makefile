@@ -2,7 +2,8 @@
 # based off https://www.cs.colby.edu/maxwell/courses/tutorials/maketutor/
 
 CC=gcc
-PROGCFLAGS=$(CFLAGS) -I. -lyyjson
+PROGCFLAGS=$(CFLAGS) -I.
+LDFLAGS=-lyyjson
 DEPS=mcformat.h
 OBJ=main.o mcformat.o
 OUT=mcpiss
@@ -11,7 +12,7 @@ OUT=mcpiss
 	$(CC) -c -o $@ $< $(PROGCFLAGS)
 
 $(OUT): $(OBJ)
-	$(CC) -o $@ $^ $(PROGCFLAGS)
+	$(CC) -o $@ $^ $(PROGCFLAGS) $(LDFLAGS)
 
 .PHONY: clean install
 

@@ -154,6 +154,8 @@ char* toSTableJSON_H(yyjson_val *curVal)
 {
 	size_t newLen = 0;
 	char color = 0;
+	char* result = NULL;
+
 	if (curVal == NULL)
 	{
 		fprintf(stderr, "toSTableJSON: curVal is NULL.\n");
@@ -227,7 +229,7 @@ char* toSTableJSON_H(yyjson_val *curVal)
 afterlen:
 
 	//printf("new len: %d\n", newLen);
-	char* result = calloc(newLen + 1, 1);
+	result = calloc(newLen + 1, 1);
 	if (result == NULL)
 	{
 		fprintf(stderr, "Could not calloc result for toSTableJSON_H.\n");
