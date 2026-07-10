@@ -52,29 +52,29 @@ idxtocol_t sTableJSON[17] = {
 void initSTable()
 {
 	memset(sTable, 0, sizeof(sTable));
-	sTable['0'] = "\033[30m";
-	sTable['1'] = "\033[34m";
-	sTable['2'] = "\033[32m";
-	sTable['3'] = "\033[36m";
-	sTable['4'] = "\033[31m";
-	sTable['5'] = "\033[35m";
-	sTable['6'] = "\033[33m";
-	sTable['7'] = "\033[37m";
-	sTable['8'] = "\033[90m";
-	sTable['9'] = "\033[94m";
-	sTable['a'] = "\033[92m";
-	sTable['b'] = "\033[96m";
-	sTable['c'] = "\033[91m";
-	sTable['d'] = "\033[95m";
-	sTable['e'] = "\033[93m";
-	sTable['f'] = "\033[97m";
+	sTable[(unsigned char)'0'] = "\033[30m";
+	sTable[(unsigned char)'1'] = "\033[34m";
+	sTable[(unsigned char)'2'] = "\033[32m";
+	sTable[(unsigned char)'3'] = "\033[36m";
+	sTable[(unsigned char)'4'] = "\033[31m";
+	sTable[(unsigned char)'5'] = "\033[35m";
+	sTable[(unsigned char)'6'] = "\033[33m";
+	sTable[(unsigned char)'7'] = "\033[37m";
+	sTable[(unsigned char)'8'] = "\033[90m";
+	sTable[(unsigned char)'9'] = "\033[94m";
+	sTable[(unsigned char)'a'] = "\033[92m";
+	sTable[(unsigned char)'b'] = "\033[96m";
+	sTable[(unsigned char)'c'] = "\033[91m";
+	sTable[(unsigned char)'d'] = "\033[95m";
+	sTable[(unsigned char)'e'] = "\033[93m";
+	sTable[(unsigned char)'f'] = "\033[97m";
 
-	sTable['k'] = "\033[46m";
-	sTable['l'] = "\033[1m";
-	sTable['m'] = "\033[9m";
-	sTable['n'] = "\033[4m";
-	sTable['o'] = "\033[3m";
-	sTable['r'] = "\033[0m";
+	sTable[(unsigned char)'k'] = "\033[46m";
+	sTable[(unsigned char)'l'] = "\033[1m";
+	sTable[(unsigned char)'m'] = "\033[9m";
+	sTable[(unsigned char)'n'] = "\033[4m";
+	sTable[(unsigned char)'o'] = "\033[3m";
+	sTable[(unsigned char)'r'] = "\033[0m";
 }
 
 char* toSTable(const char* curStr)
@@ -84,7 +84,7 @@ char* toSTable(const char* curStr)
 	size_t newLen    = curStrLen;
 
 	// get size of new string
-	for (int i = 0; i < curStrLen; i++)
+	for (size_t i = 0; i < curStrLen; i++)
 	{
 		//printf("%-4u | %-2c - %-4u\n", (unsigned char)curStr[i], curStr[i], (unsigned char)S_TABLE_CHAR);
 		if (i + 1 < curStrLen)
@@ -98,10 +98,10 @@ char* toSTable(const char* curStr)
 		if (i + 1 < curStrLen)
 		{
 			i++;
-			//printf("%d - %u\n", sTable[curStr[i]], curStr[i]);
-			if (sTable[curStr[i]] != NULL)
+			//printf("%d - %u\n", sTable[(unsigned char)curStr[i]], curStr[i]);
+			if (sTable[(unsigned char)curStr[i]] != NULL)
 			{
-				newLen += strlen(sTable[curStr[i]]);
+				newLen += strlen(sTable[(unsigned char)curStr[i]]);
 				newLen -= 2;
 				//printf("[ %d -> %d ]\n", curStrLen, newLen);
 			}
@@ -121,7 +121,7 @@ char* toSTable(const char* curStr)
 		return NULL;
 	}
 
-	for (int i = 0; i < curStrLen; i++)
+	for (size_t i = 0; i < curStrLen; i++)
 	{
 		if (i + 1 < curStrLen)
 		if (curStr[i + 1] == S_TABLE_CHAR && (curStr[i] & 0x80) != 0)
@@ -133,9 +133,9 @@ char* toSTable(const char* curStr)
 		if (i + 1 < curStrLen)
 		{
 			i++;
-			if (sTable[curStr[i]] != NULL)
+			if (sTable[(unsigned char)curStr[i]] != NULL)
 			{
-				strcat(coloredStr, sTable[curStr[i]]);
+				strcat(coloredStr, sTable[(unsigned char)curStr[i]]);
 			}
 
 			continue;
@@ -169,8 +169,6 @@ char* toSTableJSON_H(yyjson_val *curVal)
 	yyjson_val *curVal_unln = yyjson_obj_get(curVal, "underlined");
 	yyjson_val *curVal_strk = yyjson_obj_get(curVal, "strikethrough");
 	yyjson_val *curVal_obfu = yyjson_obj_get(curVal, "obfuscated");
-
-	yyjson_val *curVal_extra = yyjson_obj_get(curVal, "extra");
 
 	if (!yyjson_is_obj(curVal))
 	{
@@ -296,10 +294,10 @@ char* toSTableJSON(yyjson_val *curVal)
 
 	//PRINT_STJSON
 
-	for(int i = 0; i < allTextLen - 1; i++)
+	for(size_t i = 0; i < allTextLen - 1; i++)
 	{
 		// extra
-		size_t iExtra = i+1;
+		size_t iExtra = i + 1;
 		yyjson_val *curVal_extra = yyjson_obj_get(allText[i].val, "extra");
 
 		// if it aint null then it aint hull
@@ -344,7 +342,7 @@ char* toSTableJSON(yyjson_val *curVal)
 
 	}
 
-	for(int i = 0; i < allTextLen - 1; i++)
+	for(size_t i = 0; i < allTextLen - 1; i++)
 		aTColLen += allText[i].strSize;
 
 	char* result = calloc(aTColLen, 1);
@@ -354,7 +352,7 @@ char* toSTableJSON(yyjson_val *curVal)
 		return NULL;
 	}
 
-	for(int i = 0; i < allTextLen - 1; i++)
+	for(size_t i = 0; i < allTextLen - 1; i++)
 	{
 		if(allText[i].str != NULL)
 		{

@@ -91,9 +91,9 @@ int readVarInt(int sockfd, int* result)
 	for (int position = 0; position < 32; position += 7)
 	{
 		unsigned char currentByte = 0;
-		size_t cB_read = read_full(sockfd, &currentByte, 1);
+		ssize_t cB_read = read_full(sockfd, &currentByte, 1);
 
-		if (cB_read == -1)
+		if (cB_read == (ssize_t)-1)
 		{
 			fprintf(stderr, "Could not read socket: %s\n", strerror(errno));
 			return 1;
@@ -276,7 +276,7 @@ int main(int argc, char** argv)
 		if (argvILen >= 2)
 		if (argv[i][0] == '-' && argv[i][1] != '-')
 		{
-			for (int j = 1; j < argvILen; j++)
+			for (size_t j = 1; j < argvILen; j++)
 			{
 				if (argv[i][j] == 'v') verbose = true;
 				if (argv[i][j] == 'V') printVersion();
@@ -395,7 +395,7 @@ int main(int argc, char** argv)
 	// Get info
 	{
 	int packLen = 0, packId = 0;
-	size_t res_read = -1;
+	ssize_t res_read = (ssize_t)-1;
 
 	readVarInt(sockfd, &packLen);
 	readVarInt(sockfd, &packId);
@@ -414,7 +414,7 @@ int main(int argc, char** argv)
 		fprintf(stderr, "Could not calloc resStr.\nExiting...\n");
 		return 1;
 	}
-	if ((res_read = read_full(sockfd, resStr, resLen)) == -1)
+	if ((res_read = read_full(sockfd, resStr, resLen)) == (ssize_t)-1)
 	{
 		fprintf(stderr, "Could not read socket: %s\n", strerror(errno));
 		return 1;
@@ -486,9 +486,9 @@ int main(int argc, char** argv)
 	// Timestamp
 	int64_t resMsec = 0;
 	uint64_t uresMsec = 0;
-	size_t res_read = -1;
+	ssize_t res_read = -1;
 
-	if ((res_read = read_full(sockfd, &uresMsec, 8)) == -1)
+	if ((res_read = read_full(sockfd, &uresMsec, 8)) == (ssize_t)-1)
 	{
 		fprintf(stderr, "Could not read socket: %s\n", strerror(errno));
 		return 1;
