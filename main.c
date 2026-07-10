@@ -392,6 +392,11 @@ int main(int argc, char** argv)
 		return 1;
 	}
 	resStr = calloc(resLen + 1, 1);
+	if (resStr == NULL)
+	{
+		fprintf(stderr, "Could not calloc resStr.\nExiting...\n");
+		return 1;
+	}
 	if ((res_read = read_full(sockfd, resStr, resLen)) == -1)
 	{
 		fprintf(stderr, "Could not read socket: %s\n", strerror(errno));
@@ -511,37 +516,77 @@ int main(int argc, char** argv)
 	printf("%-20s: \033[35m%s\033[0m \033[36m(protocol v%d)\033[0m\n", "Version", versionColored, resStr_versionPrt != NULL ? yyjson_get_int(resStr_versionPrt) : -1);
 	if (resStr_versionStr != NULL) free(versionColored);
 	}
+
+#define RS_DESC for (size_t i = 0; resStr_descStr[i] != 0; i++) \
+		{ \
+			if (resStr_descStr[i] == '\n') \
+			{ \
+				resStr_descStr[i] = 0; \
+				resStr_descNL++; \
+			} \
+		} \
+		\
+		for (size_t p = 0, i = 0; i < resStr_descNL; i++, p += strlen(resStr_descStr + p) + 1) \
+		{ \
+			if (i == 0) printf("%-20s: ", "Description"); \
+			else printf("%-20s: ", ""); \
+		\
+			printf("%s\033[0m\n", resStr_descStr + p); \
+		}
+
 	if (yyjson_is_str(resStr_desc))
 	{
 		const char* resStr_descStrC = yyjson_get_str(resStr_desc);
 		char*  resStr_descStrColor  = toSTable(resStr_descStrC);
+		if(resStr_descStrColor == NULL)
+		{
+			fprintf(stderr, "Could not convert with toSTable.\nExiting...\n");
+			return 1;
+		}
 		size_t resStr_descStrLen    = strlen(resStr_descStrColor);
 		char*  resStr_descStr       = calloc(resStr_descStrLen + 1, 1);
+		if(resStr_descStr == NULL)
+		{
+			fprintf(stderr, "Could not calloc resStr_descStr.\nExiting...\n");
+			return 1;
+		}
 		size_t resStr_descNL        = 1;
 
 		memcpy(resStr_descStr, resStr_descStrColor, resStr_descStrLen + 1);
 		free(resStr_descStrColor);
 
-		for (size_t i = 0; resStr_descStr[i] != 0; i++)
-		{
-			if (resStr_descStr[i] == '\n')
-			{
-				resStr_descStr[i] = 0;
-				resStr_descNL++;
-			}
-		}
 
-		for (size_t p = 0, i = 0; i < resStr_descNL; i++, p += strlen(resStr_descStr + p) + 1)
-		{
-			if (i == 0) printf("%-20s: ", "Description");
-			else printf("%-20s: ", "");
-
-			printf("%s\033[0m\n", resStr_descStr + p);
-		}
+		RS_DESC
 
 		free(resStr_descStr);
 	} else if(resStr_desc != NULL)
+	{
+#ifndef NO_MCTEXT_COMPONENTS
+		char* resStr_descStrNC = toSTableJSON(resStr_desc);
+		if(resStr_descStrNC == NULL)
+		{
+			fprintf(stderr, "Could not convert with toSTableJSON.\nExiting...\n");
+			return 1;
+		}
+		char* resStr_descStr = toSTable(resStr_descStrNC);
+		if(resStr_descStr == NULL)
+		{
+			fprintf(stderr, "Could not convert with toSTable.\nExiting...\n");
+			return 1;
+		}
+		size_t resStr_descNL = 1;
+
+
+		free(resStr_descStrNC);
+
+
+		RS_DESC
+
+		free(resStr_descStr);
+#else
 		fprintf(stderr, "Description is pretty formatted. Thanks, Minecraft.\n");
+#endif
+	}
 
 	printf("%-20s: %s%ums\033[0m\n", "Ping",
 		 resPing >= MEDIUM_PING ?

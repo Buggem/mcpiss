@@ -19,7 +19,30 @@
 // MC color coding + formatting
 
 #define S_TABLE_CHAR '\xa7'
+
+#ifndef NO_MCTEXT_COMPONENTS
+#define PRINT_STJSON { printf("======\n"); for(int i = 0; i < allTextLen; i++) printf("%-3d : 0x%08x\n", i, allText[i].val); }
+
+typedef struct {
+	char idx;
+	char* colorName;
+} idxtocol_t;
+
+typedef struct {
+	yyjson_val* val;
+	char* str;
+	size_t strSize;
+} valsc_t;
+
+extern idxtocol_t sTableJSON[17];
+#endif
+
 extern char* sTable[256];
 
 void  initSTable();
 char*   toSTable(const char* curStr);
+
+#ifndef NO_MCTEXT_COMPONENTS
+char* toSTableJSON_H(yyjson_val *curVal);
+char* toSTableJSON(yyjson_val *curVal);
+#endif
