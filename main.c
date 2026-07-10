@@ -140,6 +140,19 @@ int writeVarInt(unsigned int value, int sockfd, bool onlyComputeLen)
 	return computedLen;
 }
 
+#define VERSION_STRING "MCPISS 1.0"
+#define   USAGE_STRING "Usage: %s [-h|--help] [-V|--version] [-v|--verbose] [--ip X.X.X.X|--port XXXXX|--dns hostname]"
+void printVersion()
+{
+	printf("%s\n", VERSION_STRING);
+	exit(1);
+}
+void printHelp(int argc, char** argv)
+{
+	printf("%s\n" USAGE_STRING "\n", VERSION_STRING, argc >= 1 ? argv[0] : "mcpiss");
+	exit(1);
+}
+
 int main(int argc, char** argv)
 {
 	char* resStr = NULL;
@@ -257,13 +270,17 @@ int main(int argc, char** argv)
 		}
 
 		if (strcmp(argv[i], "--verbose") == 0) verbose = true;
+		if (strcmp(argv[i], "--version") == 0) printVersion();
+		if (strcmp(argv[i], "--help"   ) == 0) printHelp(argc, argv);
 
 		if (argvILen >= 2)
 		if (argv[i][0] == '-' && argv[i][1] != '-')
 		{
-			for(int j = 1; j < argvILen; j++)
+			for (int j = 1; j < argvILen; j++)
 			{
-				if(argv[i][j] == 'v') verbose = true;
+				if (argv[i][j] == 'v') verbose = true;
+				if (argv[i][j] == 'V') printVersion();
+				if (argv[i][j] == 'H') printHelp(argc, argv);
 				break;
 			}
 		}
