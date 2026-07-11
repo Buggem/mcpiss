@@ -4,8 +4,8 @@
 CC=gcc
 PROGCFLAGS=$(CFLAGS) -I.
 LDFLAGS=-lyyjson
-DEPS=mcformat.h
-OBJ=main.o mcformat.o
+DEPS=mcformat.h rw.h
+OBJ=main.o mcformat.o rw.o
 OUT=mcpiss
 
 %.o: %.c $(DEPS)

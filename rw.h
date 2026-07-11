@@ -16,36 +16,13 @@
     along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
-// MC color coding + formatting
+#include <sys/types.h>
+#include <stdbool.h>
 
-#include <stdio.h>
-#include <yyjson.h>
+// fullreads
+ssize_t rewr_full(int fildes, void *buf, size_t nbyte, ssize_t (*rewr)(int, void*, size_t));
+ssize_t read_full (int fildes, void *buf, size_t nbyte);
+ssize_t write_full(int fildes, const void *buf, size_t nbyte);
 
-#define S_TABLE_CHAR '\xa7'
-
-#ifndef NO_MCTEXT_COMPONENTS
-#define PRINT_STJSON { printf("======\n"); for(int i = 0; i < allTextLen; i++) printf("%-3d : 0x%08x\n", i, allText[i].val); }
-
-typedef struct {
-	char idx;
-	char* colorName;
-} idxtocol_t;
-
-typedef struct {
-	yyjson_val* val;
-	char* str;
-	size_t strSize;
-} valsc_t;
-
-extern idxtocol_t sTableJSON[17];
-#endif
-
-extern char* sTable[256];
-
-void  initSTable();
-char*   toSTable(const char* curStr);
-
-#ifndef NO_MCTEXT_COMPONENTS
-char* toSTableJSON_H(yyjson_val *curVal);
-char* toSTableJSON(yyjson_val *curVal);
-#endif
+int readVarInt(int sockfd, int* result);
+int writeVarInt(unsigned int value, int sockfd, bool onlyComputeLen);
