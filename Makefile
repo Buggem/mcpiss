@@ -1,23 +1,33 @@
 # mcpiss makefile
 # based off https://www.cs.colby.edu/maxwell/courses/tutorials/maketutor/
 
-CC=gcc
-PROGCFLAGS=$(CFLAGS) -I.
-LDFLAGS=-lyyjson
-DEPS=mcformat.h rw.h
-OBJ=main.o mcformat.o rw.o
-OUT=mcpiss
+IDIR    = ./include
+CC      = gcc
+_CFLAGS = $(CFLAGS) -I$(IDIR)
+LDFLAGS = -lyyjson
 
-%.o: %.c $(DEPS)
-	$(CC) -c -o $@ $< $(PROGCFLAGS)
+OUT     = mcpiss
+
+ODIR    = obj
+LDIR    = ../lib
+
+_DEPS   = mcformat.h rw.h
+DEPS    = $(patsubst %,$(IDIR)/%,$(_DEPS))
+
+_OBJ    = main.o mcformat.o rw.o
+OBJ     = $(patsubst %,$(ODIR)/%,$(_OBJ))
+
+
+$(ODIR)/%.o: src/%.c $(DEPS)
+	mkdir -p obj
+	$(CC) -c -o $@ $< $(_CFLAGS) $(LDFLAGS)
 
 $(OUT): $(OBJ)
-	$(CC) -o $@ $^ $(PROGCFLAGS) $(LDFLAGS)
+	$(CC) -o $@ $^ $(_CFLAGS) $(LDFLAGS)
 
 .PHONY: clean install
 
 clean:
-	rm -vf *.o $(OUT)
-
+	rm -rf $(ODIR) $(OUT)
 install:
 	cp -v $(OUT) /usr/bin/$(OUT)
