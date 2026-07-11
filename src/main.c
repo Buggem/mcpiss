@@ -23,6 +23,7 @@
 #include <stdlib.h>
 #include <errno.h>
 #include <stdbool.h>
+#include <stdint.h>
 
 #include <time.h>
 #include <sys/time.h>
@@ -37,30 +38,15 @@
 #include "rw.h"
 #include "mcformat.h"
 
-// compat - thanks, SO
-#if __BIG_ENDIAN__
-    #define htonll(x)   (x)
-    #define ntohll(x)   (x)
-#else
-    #define htonll(x)   ((((uint64_t)htonl(x & 0xFFFFFFFF)) << 32) | htonl(x >> 32))
-    #define ntohll(x)   ((((uint64_t)ntohl(x & 0xFFFFFFFF)) << 32) | ntohl(x >> 32))
-#endif
+#include "main.h"
+#include "java.h"
+
 
 unsigned short PORT = 25565;
 bool verbose = false;
-#define PROTOCOL_VERSION 776
-
-#define INTENT_STATUS   1
-#define INTENT_LOGIN    2
-#define INTENT_TRANSFER 3
-
-#define SEVERE_PING 300
-#define   HIGH_PING 150
-#define MEDIUM_PING 50
 
 
-#define VERSION_STRING "MCPISS 1.0"
-#define   USAGE_STRING "Usage: %s [-h|--help] [-V|--version] [-v|--verbose] [--ip X.X.X.X|--port XXXXX|--dns hostname]"
+
 void printVersion()
 {
 	printf("%s\n", VERSION_STRING);
@@ -264,22 +250,22 @@ int main(int argc, char** argv)
 
 	shakeLen += writeVarInt(0,                sockfd, true);
 	// Handshake
-	shakeLen += writeVarInt(PROTOCOL_VERSION, sockfd, true);
+	shakeLen += writeVarInt(JAVA_PROTOCOL_VERSION, sockfd, true);
 	shakeLen += writeVarInt(shakeAddr_len,    sockfd, true);
 	shakeLen += shakeAddr_len;
 	shakeLen += 2;
-	shakeLen += writeVarInt(INTENT_STATUS,    sockfd, true);
+	shakeLen += writeVarInt(JAVA_INTENT_STATUS,    sockfd, true);
 
 
 	// Packet Header
 	writeVarInt(shakeLen,         sockfd, false);
 	writeVarInt(0,                sockfd, false);
 	// Handshake
-	writeVarInt(PROTOCOL_VERSION, sockfd, false);
+	writeVarInt(JAVA_PROTOCOL_VERSION, sockfd, false);
 	writeVarInt(shakeAddr_len,    sockfd, false);
 	write_full(sockfd, shakeAddr, shakeAddr_len);
 	write_full(sockfd, &serv_addr.sin_port, 2);
-	writeVarInt(INTENT_STATUS,    sockfd, false);
+	writeVarInt(JAVA_INTENT_STATUS,    sockfd, false);
 
 	}
 
