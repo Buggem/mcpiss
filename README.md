@@ -25,9 +25,7 @@ Installation is not necessary for the program to function, but is an optional me
 sudo make install
 ```
 ## Usage
-The tool has several command line options, however none are documented by an in-executable usage prompt at this time.
-
-This will definitely change in the future.
+The tool has several command line options, which can be listed using `--help`.
 
 `--ip` can be used to define what IP you want to ping. The default is 127.0.0.1.<br>
 Port syntax (X.X.X.X:port) is not supported, but simillar effects can be achieved using the `--port` flag, described below.<br>
@@ -52,7 +50,7 @@ An alias of `--verbose` is `-v`.<br>
 ## Licensing
 
 This software is licensed under the GNU General Public License version 3.0.
-
+See LICENSE for details.
 
 ## Reporting bugs
 
