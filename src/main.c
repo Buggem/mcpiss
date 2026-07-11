@@ -194,38 +194,16 @@ int main(int argc, char** argv)
 	// init sTable
 	initSTable();
 
-	// create and verify socket
-	if ((sockfd = socket(AF_INET, SOCK_STREAM, 0)) == -1)
-	{
-		fprintf(stderr, "Could not create socket: %s\n", strerror(errno));
-		return 1;
-	}
+	java_netInit(&sockfd, &serv_addr, serv_ip);
 
-	// setup serv addr
-	memset(&serv_addr, 0, sizeof(serv_addr));
-	serv_addr.sin_family = AF_INET;
-	serv_addr.sin_addr.s_addr = htonl(serv_ip);
-	serv_addr.sin_port = htons(PORT);
-
-	// connect the client to server
-	if (connect(sockfd, (struct sockaddr*)&serv_addr, sizeof(serv_addr)) != 0)
-	{
-		fprintf(stderr, "Could not connect to the server: %s\n", strerror(errno));
-		return 1;
-	} else
-	{
-		if(verbose) printf("Successfully established connection - shaking hands\n");
-	}
-
-
-	cs_handshake(sockfd, fakeDNS, serv_addr, serv_ip);
-	cs_statusRequest(sockfd);
+	java_cs_handshake(sockfd, fakeDNS, serv_addr, serv_ip);
+	java_cs_statusRequest(sockfd);
 
 #ifdef CUSTOM_RESPONSE
 	resStr = "{}";
 	resLen = strlen(resStr);
 #else
-	resStr = sc_statusResponse(sockfd);
+	resStr = java_sc_statusResponse(sockfd);
 	resLen = strlen(resStr);
 #endif
 	resStr_doc = yyjson_read(resStr, resLen, 0);
@@ -238,8 +216,8 @@ int main(int argc, char** argv)
 
 	// Ping-pong before closing
 
-	cs_pingRequest(sockfd);
-	resPing = sc_pongResponse(sockfd);
+	java_cs_pingRequest(sockfd);
+	resPing = java_sc_pongResponse(sockfd);
 
 	// Parse info with yyjson
 	yyjson_val *resStr_root       = yyjson_doc_get_root(resStr_doc);

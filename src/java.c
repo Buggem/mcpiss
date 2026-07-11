@@ -34,7 +34,33 @@
 
 #include "java.h"
 
-void cs_handshake(int sockfd, char* fakeDNS, struct sockaddr_in serv_addr, uint32_t serv_ip)
+void java_netInit(int* sockfd, struct sockaddr_in* serv_addr, uint32_t serv_ip)
+{
+	// create and verify socket
+	if ((*sockfd = socket(AF_INET, SOCK_STREAM, 0)) == -1)
+	{
+		fprintf(stderr, "Could not create socket: %s\n", strerror(errno));
+		exit(1);
+	}
+
+	// setup serv addr
+	memset(serv_addr, 0, sizeof(*serv_addr));
+	serv_addr->sin_family = AF_INET;
+	serv_addr->sin_addr.s_addr = htonl(serv_ip);
+	serv_addr->sin_port = htons(PORT);
+
+	// connect the client to server
+	if (connect(*sockfd, (struct sockaddr*)serv_addr, sizeof(*serv_addr)) != 0)
+	{
+		fprintf(stderr, "Could not connect to the server: %s\n", strerror(errno));
+		exit(1);
+	} else
+	{
+		if(verbose) printf("Successfully established connection - shaking hands\n");
+	}
+}
+
+void java_cs_handshake(int sockfd, char* fakeDNS, struct sockaddr_in serv_addr, uint32_t serv_ip)
 {
 	unsigned int shakeLen = 0;
 
@@ -93,7 +119,7 @@ void cs_handshake(int sockfd, char* fakeDNS, struct sockaddr_in serv_addr, uint3
 }
 
 // C->S Ask server for a status
-void cs_statusRequest(int sockfd)
+void java_cs_statusRequest(int sockfd)
 {
 	unsigned int shakeLen = 0;
 
@@ -115,7 +141,7 @@ void cs_statusRequest(int sockfd)
 }
 
 // S->C Get info
-char* sc_statusResponse(int sockfd)
+char* java_sc_statusResponse(int sockfd)
 {
 	char* resStr = NULL;
 	int resLen = 0, packLen = 0, packId = 0;
@@ -156,7 +182,7 @@ char* sc_statusResponse(int sockfd)
 // Ping-pong before closing
 
 // C->S Ping
-void cs_pingRequest(int sockfd)
+void java_cs_pingRequest(int sockfd)
 {
 	unsigned int shakeLen = 0;
 
@@ -193,7 +219,7 @@ void cs_pingRequest(int sockfd)
 }
 
 // S->C Pong
-int sc_pongResponse(int sockfd)
+int java_sc_pongResponse(int sockfd)
 {
 	int packLen = 0, packId = 0;
 

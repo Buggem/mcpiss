@@ -16,15 +16,20 @@
     along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
+#include <stdint.h>
+#include <netinet/in.h>
+
 #define JAVA_PROTOCOL_VERSION 776
 
 #define JAVA_INTENT_STATUS   1
 #define JAVA_INTENT_LOGIN    2
 #define JAVA_INTENT_TRANSFER 3
 
-void cs_handshake(int sockfd, char* fakeDNS, struct sockaddr_in serv_addr, uint32_t serv_ip);
-void  cs_statusRequest(int sockfd);
-char* sc_statusResponse(int sockfd);
-void  cs_pingRequest(int sockfd);
-int   sc_pongResponse(int sockfd);
+void java_netInit(int* sockfd, struct sockaddr_in* serv_addr, uint32_t serv_ip);
+
+void  java_cs_handshake(int sockfd, char* fakeDNS, struct sockaddr_in serv_addr, uint32_t serv_ip);
+void  java_cs_statusRequest(int sockfd);
+char* java_sc_statusResponse(int sockfd);
+void  java_cs_pingRequest(int sockfd);
+int   java_sc_pongResponse(int sockfd);
 
