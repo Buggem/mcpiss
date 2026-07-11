@@ -21,3 +21,10 @@
 #define JAVA_INTENT_STATUS   1
 #define JAVA_INTENT_LOGIN    2
 #define JAVA_INTENT_TRANSFER 3
+
+void cs_handshake(int sockfd, char* fakeDNS, struct sockaddr_in serv_addr, uint32_t serv_ip);
+void  cs_statusRequest(int sockfd);
+char* sc_statusResponse(int sockfd);
+void  cs_pingRequest(int sockfd);
+int   sc_pongResponse(int sockfd);
+

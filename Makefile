@@ -11,10 +11,10 @@ OUT     = mcpiss
 ODIR    = obj
 LDIR    = ../lib
 
-_DEPS   = mcformat.h rw.h main.h java.h
+_DEPS   = main.h mcformat.h rw.h java.h
 DEPS    = $(patsubst %,$(IDIR)/%,$(_DEPS))
 
-_OBJ    = main.o mcformat.o rw.o
+_OBJ    = main.o mcformat.o rw.o java.o
 OBJ     = $(patsubst %,$(ODIR)/%,$(_OBJ))
 
 

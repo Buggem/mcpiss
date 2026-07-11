@@ -218,121 +218,14 @@ int main(int argc, char** argv)
 	}
 
 
-	// TCP_CORK is only on Linux.
-	// GNUobs cant fight me. This is called Linux, not GNU/Linux.
-	unsigned int corked = 1;
-
-	// cork (pause data)
-	setsockopt(sockfd, IPPROTO_TCP, TCP_CORK, &corked, sizeof(corked));
-
-	// I honestly hate this code.
-	{
-	unsigned int shakeLen = 0;
-
-	char shakeAddr[255] = {'\0'};
-	if(fakeDNS == NULL)
-	{
-		snprintf(shakeAddr, sizeof(shakeAddr), "%u.%u.%u.%u",
-			(unsigned char)((serv_ip >> 24) & 0xff),
-			(unsigned char)((serv_ip >> 16) & 0xff),
-			(unsigned char)((serv_ip >>  8) & 0xff),
-			(unsigned char)((serv_ip      ) & 0xff)
-		);
-	} else {
-		snprintf(shakeAddr, sizeof(shakeAddr), "%s",
-			fakeDNS
-		);
-	}
-	if(verbose) printf("%s\n", shakeAddr);
-	unsigned int shakeAddr_len = strlen(shakeAddr);
-
-	// Packet Header (no length, duh)
-
-	shakeLen += writeVarInt(0,                sockfd, true);
-	// Handshake
-	shakeLen += writeVarInt(JAVA_PROTOCOL_VERSION, sockfd, true);
-	shakeLen += writeVarInt(shakeAddr_len,    sockfd, true);
-	shakeLen += shakeAddr_len;
-	shakeLen += 2;
-	shakeLen += writeVarInt(JAVA_INTENT_STATUS,    sockfd, true);
-
-
-	// Packet Header
-	writeVarInt(shakeLen,         sockfd, false);
-	writeVarInt(0,                sockfd, false);
-	// Handshake
-	writeVarInt(JAVA_PROTOCOL_VERSION, sockfd, false);
-	writeVarInt(shakeAddr_len,    sockfd, false);
-	write_full(sockfd, shakeAddr, shakeAddr_len);
-	write_full(sockfd, &serv_addr.sin_port, 2);
-	writeVarInt(JAVA_INTENT_STATUS,    sockfd, false);
-
-	}
-
-	// uncork (flush data)
-	corked = 0;
-	setsockopt(sockfd, IPPROTO_TCP, TCP_CORK, &corked, sizeof(corked));
-
-
-	// cork (pause data)
-	corked = 1;
-	setsockopt(sockfd, IPPROTO_TCP, TCP_CORK, &corked, sizeof(corked));
-
-	// Ask server for a status
-	{
-	unsigned int shakeLen = 0;
-
-	// Packet Header (no length, hurrrrrr durrrr)
-
-	shakeLen += writeVarInt(0, sockfd, true);
-	// There is no content for status_request
-
-
-	writeVarInt(shakeLen, sockfd, false);
-	writeVarInt(0,        sockfd, false);
-
-	}
-
-	// uncork (flush data)
-	corked = 0;
-	setsockopt(sockfd, IPPROTO_TCP, TCP_CORK, &corked, sizeof(corked));
-
-	// Get info
-	{
-	int packLen = 0, packId = 0;
-	ssize_t res_read = (ssize_t)-1;
-
-	readVarInt(sockfd, &packLen);
-	readVarInt(sockfd, &packId);
-
-	readVarInt(sockfd, &resLen);
-	if (verbose) printf("Response length: %d\n", resLen);
-
-	if (resLen > 65535)
-	{
-		fprintf(stderr, "Likely not a Minecraft server - length of response is beyond 65535.\nExiting...\n");
-		return 1;
-	}
-	resStr = calloc(resLen + 1, 1);
-	if (resStr == NULL)
-	{
-		fprintf(stderr, "Could not calloc resStr.\nExiting...\n");
-		return 1;
-	}
-	if ((res_read = read_full(sockfd, resStr, resLen)) == (ssize_t)-1)
-	{
-		fprintf(stderr, "Could not read socket: %s\n", strerror(errno));
-		return 1;
-	} else if (res_read == 0)
-	{
-		fprintf(stderr, "Socket closed? Didn't read anything!\nExiting...\n");
-		return 1;
-	}
+	cs_handshake(sockfd, fakeDNS, serv_addr, serv_ip);
+	cs_statusRequest(sockfd);
 
 #ifdef CUSTOM_RESPONSE
-	free(resStr);
-
 	resStr = "{}";
+	resLen = strlen(resStr);
+#else
+	resStr = sc_statusResponse(sockfd);
 	resLen = strlen(resStr);
 #endif
 	resStr_doc = yyjson_read(resStr, resLen, 0);
@@ -342,80 +235,11 @@ int main(int argc, char** argv)
 		return 1;
 	}
 	if(verbose) printf("%s\n", resStr);
-	}
-
-
 
 	// Ping-pong before closing
 
-	// cork (pause data)
-	corked = 1;
-	setsockopt(sockfd, IPPROTO_TCP, TCP_CORK, &corked, sizeof(corked));
-
-	// Ping server
-	{
-	unsigned int shakeLen = 0;
-
-	// Packet Header (no length, hurrrrrr durrrr)
-
-	shakeLen += writeVarInt(1, sockfd, true);
-	// Timestamp
-	shakeLen += 8;
-
-	// Packet Header
-	writeVarInt(shakeLen, sockfd, false);
-	writeVarInt(1,        sockfd, false);
-	// Timestamp
-	int64_t curMsec = 0;
-	uint64_t ucurMsec = 0;
-	struct timeval curTime;
-	gettimeofday(&curTime, NULL);
-	curMsec = (int64_t)curTime.tv_sec * 1000 + (int64_t)curTime.tv_usec / 1000;
-	ucurMsec = htonll(curMsec);
-	write_full(sockfd, &ucurMsec, 8);
-
-	if(verbose) printf("Timestamp %-10s: %lu\n", "sent", curMsec);
-	}
-
-	// uncork (flush data)
-	corked = 0;
-	setsockopt(sockfd, IPPROTO_TCP, TCP_CORK, &corked, sizeof(corked));
-
-	// Pong
-	{
-	int packLen = 0, packId = 0;
-
-	readVarInt(sockfd, &packLen);
-	readVarInt(sockfd, &packId);
-
-	// Timestamp
-	int64_t resMsec = 0;
-	uint64_t uresMsec = 0;
-	ssize_t res_read = -1;
-
-	if ((res_read = read_full(sockfd, &uresMsec, 8)) == (ssize_t)-1)
-	{
-		fprintf(stderr, "Could not read socket: %s\n", strerror(errno));
-		return 1;
-	} else if (res_read == 0)
-	{
-		fprintf(stderr, "Socket closed? Didn't read anything!\nExiting...\n");
-		return 1;
-	}
-
-	// Read current timestamp
-	int64_t curMsec = 0;
-
-	struct timeval curTime;
-	gettimeofday(&curTime, NULL);
-	curMsec = (int64_t)curTime.tv_sec * 1000 + (int64_t)curTime.tv_usec / 1000;
-
-	uresMsec = ntohll(uresMsec);
-	resMsec = (int64_t)uresMsec;
-	resPing = curMsec - resMsec;
-	if(verbose) printf("Timestamp %-10s: %lu\n", "recieved", resMsec);
-	if(verbose) printf("Timestamp %-10s: %lu\n", "right now", curMsec);
-	}
+	cs_pingRequest(sockfd);
+	resPing = sc_pongResponse(sockfd);
 
 	// Parse info with yyjson
 	yyjson_val *resStr_root       = yyjson_doc_get_root(resStr_doc);
