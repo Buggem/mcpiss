@@ -37,8 +37,8 @@
 
 #include "rw.h"
 #include "mcformat.h"
-
 #include "main.h"
+
 #include "java.h"
 
 
@@ -68,7 +68,7 @@ int main(int argc, char** argv)
 
 	int sockfd = -1;
 	struct sockaddr_in serv_addr;
-	unsigned long serv_ip = INADDR_LOOPBACK;
+	uint32_t serv_ip = INADDR_LOOPBACK;
 
 	for (int i = 1; i < argc; i++) {
 		if (argv[i] == NULL) break;
@@ -115,10 +115,10 @@ int main(int argc, char** argv)
 
 					j++;
 				}
-				serv_ip = (unsigned long)parsedip[0] << 24 |
-					  (unsigned long)parsedip[1] << 16 |
-					  (unsigned long)parsedip[2] << 8  |
-					  (unsigned long)parsedip[3];
+				serv_ip = (uint32_t)parsedip[0] << 24 |
+					  (uint32_t)parsedip[1] << 16 |
+					  (uint32_t)parsedip[2] << 8  |
+					  (uint32_t)parsedip[3];
 				//printf("%lu\n", serv_ip);
 
 				continue;
