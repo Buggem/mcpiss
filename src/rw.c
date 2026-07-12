@@ -29,16 +29,20 @@ ssize_t rewr_full(int fildes, void *buf, size_t nbyte, ssize_t (*rewr)(int, void
 {
 	ssize_t bytesLeft = nbyte;
 
+	//printf("starting\n");
 	while (bytesLeft != 0)
 	{
 		ssize_t result = rewr(fildes, buf + (nbyte - bytesLeft), bytesLeft);
 
-		if (result == -1 && errno == EINTR) continue;
+		//printf("result %lu - bytesLeft %lu\n", result, bytesLeft - result);
+		if (result == (ssize_t)-1 && errno == EINTR) continue;
 		if (result <=  0) return result;
 
+		//printf("after those\n");
 		bytesLeft -= result;
 	}
 
+	//printf("returning\n");
 	return nbyte;
 }
 ssize_t read_full (int fildes, void *buf, size_t nbyte)

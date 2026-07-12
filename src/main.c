@@ -40,11 +40,12 @@
 #include "main.h"
 
 #include "java.h"
-
+#include "bedrock.h"
 
 unsigned short PORT = 25565;
-bool verbose = false;
 
+bool verbose = false;
+int varient = 0; // 0 - java, 1 - bedrock
 
 
 void printVersion()
@@ -60,6 +61,8 @@ void printHelp(int argc, char** argv)
 
 int main(int argc, char** argv)
 {
+	bedrockinf_t bedrockResInfo;
+
 	char* resStr = NULL;
 	int resLen = 0;
 	int64_t resPing = 0;
@@ -174,6 +177,12 @@ int main(int argc, char** argv)
 			break;
 		}
 
+		if (strcmp(argv[i], "--bedrock") == 0)
+		{
+			varient = 1;
+			PORT = 19132;
+		}
+
 		if (strcmp(argv[i], "--verbose") == 0) verbose = true;
 		if (strcmp(argv[i], "--version") == 0) printVersion();
 		if (strcmp(argv[i], "--help"   ) == 0) printHelp(argc, argv);
@@ -191,33 +200,184 @@ int main(int argc, char** argv)
 		}
 	}
 
+	memset(&bedrockResInfo, 0, sizeof(bedrockResInfo));
+
 	// init sTable
 	initSTable();
 
-	java_netInit(&sockfd, &serv_addr, serv_ip);
+	if (varient == 0)
+	{
+		java_netInit(&sockfd, &serv_addr, serv_ip);
 
-	java_cs_handshake(sockfd, fakeDNS, serv_addr, serv_ip);
-	java_cs_statusRequest(sockfd);
+		java_cs_handshake(sockfd, fakeDNS, serv_addr, serv_ip);
+		java_cs_statusRequest(sockfd);
 
 #ifdef CUSTOM_RESPONSE
-	resStr = "{}";
-	resLen = strlen(resStr);
+		resStr = "{}";
+		resLen = strlen(resStr);
 #else
-	resStr = java_sc_statusResponse(sockfd);
-	resLen = strlen(resStr);
+		resStr = java_sc_statusResponse(sockfd);
+		resLen = strlen(resStr);
 #endif
-	resStr_doc = yyjson_read(resStr, resLen, 0);
-	if(resStr_doc == NULL)
+		resStr_doc = yyjson_read(resStr, resLen, 0);
+		if(resStr_doc == NULL)
+		{
+			fprintf(stderr, "Likely not a Minecraft server - yyJSON could not read the JSON response:\n%s\nExiting...\n", resStr);
+			return 1;
+		}
+		if(verbose) printf("%s\n", resStr);
+
+		// Ping-pong before closing
+
+		java_cs_pingRequest(sockfd);
+		resPing = java_sc_pongResponse(sockfd);
+
+	} else if (varient == 1)
 	{
-		fprintf(stderr, "Likely not a Minecraft server - yyJSON could not read the JSON response:\n%s\nExiting...\n", resStr);
-		return 1;
+		bedrockpong_t result;
+
+		int curI = 0, newI = 0;
+
+		bedrock_netInit(&sockfd, &serv_addr, serv_ip);
+
+		bedrock_cs_unconnectedPing(sockfd);
+		result = bedrock_sc_unconnectedPong(sockfd);
+
+		resPing = result.ping;
+
+		for(int i = 0; i < result.len; i++) {
+			if(result.str[i] == ';') result.str[i] = '\0';
+		}
+
+		if (curI < result.len)
+		{
+			if (memcmp(result.str + curI, BEDROCK_MCEE_STR, strlen(BEDROCK_MCEE_STR) < strlen(result.str) ? strlen(BEDROCK_MCEE_STR) : strlen(result.str)) == 0)
+				bedrockResInfo.edition = BEDROCK_MCEE;
+			else
+				bedrockResInfo.edition = BEDROCK_MCPE;
+		}
+		else
+			exit(1);
+
+		newI  = strlen(result.str + curI) + 1;
+		curI += newI;
+		if (verbose) printf("%d < %d\n", curI, result.len);
+
+		if (curI < result.len)
+			bedrockResInfo.name = result.str + curI;
+		else
+			exit(1);
+
+		newI  = strlen(result.str + curI) + 1;
+		curI += newI;
+		if (verbose) printf("%d < %d\n", curI, result.len);
+
+		if (curI < result.len)
+			bedrockResInfo.protocol = (int)strtol(result.str + curI, NULL, 10);
+		else
+			exit(1);
+
+		newI  = strlen(result.str + curI) + 1;
+		curI += newI;
+		if (verbose) printf("%d < %d\n", curI, result.len);
+
+		if (curI < result.len)
+			bedrockResInfo.version = result.str + curI;
+		else
+			exit(1);
+
+		newI  = strlen(result.str + curI) + 1;
+		curI += newI;
+		if (verbose) printf("%d < %d\n", curI, result.len);
+
+		if (curI < result.len)
+			bedrockResInfo.players = (int)strtol(result.str + curI, NULL, 10);
+		else
+			exit(1);
+
+		newI  = strlen(result.str + curI) + 1;
+		curI += newI;
+		if (verbose) printf("%d < %d\n", curI, result.len);
+
+		if (curI < result.len)
+			bedrockResInfo.max = (int)strtol(result.str + curI, NULL, 10);
+		else
+			exit(1);
+
+		newI  = strlen(result.str + curI) + 1;
+		curI += newI;
+		if (verbose) printf("%d < %d\n", curI, result.len);
+
+		if (curI < result.len)
+			bedrockResInfo.serverUUID = strtoull(result.str + curI, NULL, 10);
+		else
+			exit(1);
+
+		newI  = strlen(result.str + curI) + 1;
+		curI += newI;
+		if (verbose) printf("%d < %d\n", curI, result.len);
+
+		if (curI < result.len)
+			bedrockResInfo.desc = result.str + curI;
+		else
+			exit(1);
+
+		newI  = strlen(result.str + curI) + 1;
+		curI += newI;
+		if (verbose) printf("%d < %d\n", curI, result.len);
+
+		if (curI < result.len)
+			bedrockResInfo.gameModeStr = result.str + curI;
+		else
+			exit(1);
+
+		newI  = strlen(result.str + curI) + 1;
+		curI += newI;
+		if (verbose) printf("%d < %d\n", curI, result.len);
+
+		if (curI < result.len)
+			bedrockResInfo.one = (int)strtol(result.str + curI, NULL, 10);
+		else
+			exit(1);
+
+		newI  = strlen(result.str + curI) + 1;
+		curI += newI;
+		if (verbose) printf("%d < %d\n", curI, result.len);
+
+		if (curI < result.len)
+			bedrockResInfo.port  = (unsigned short)strtoul(result.str + curI, NULL, 10);
+		else
+			exit(1);
+
+		newI  = strlen(result.str + curI) + 1;
+		curI += newI;
+		if (verbose) printf("%d < %d\n", curI, result.len);
+
+		if (curI < result.len)
+			bedrockResInfo.port6 = (unsigned short)strtoul(result.str + curI, NULL, 10);
+		else
+			exit(1);
+
+		newI  = strlen(result.str + curI) + 1;
+		curI += newI;
+		if (verbose) printf("%d < %d\n", curI, result.len);
+
+		/*
+		printf("Education Edition: %d\nName: %s\nProtocol: %d\nVersion: %s\nPlayers: %d/%d\nServer UUID: %d\nDescription: %s\nGame mode: %s\n???: %d\nPort: %u (IPv6: %u)\n",
+			bedrockResInfo.edition,
+			bedrockResInfo.name,
+			bedrockResInfo.protocol, bedrockResInfo.version,
+			bedrockResInfo.players, bedrockResInfo.max,
+			bedrockResInfo.serverUUID,
+			bedrockResInfo.desc,
+			bedrockResInfo.gameModeStr,
+			bedrockResInfo.one,
+			bedrockResInfo.port, bedrockResInfo.port6
+		);
+		*/
 	}
-	if(verbose) printf("%s\n", resStr);
 
-	// Ping-pong before closing
-
-	java_cs_pingRequest(sockfd);
-	resPing = java_sc_pongResponse(sockfd);
+	//if (varient != 0) return 1;
 
 	// Parse info with yyjson
 	yyjson_val *resStr_root       = yyjson_doc_get_root(resStr_doc);
@@ -236,8 +396,16 @@ int main(int argc, char** argv)
 
 	printf("==============================\n");
 	{
-	char* versionColored = resStr_versionStr != NULL ? toSTable(yyjson_get_str(resStr_versionStr)) : "\033[90mOld\033[0m";
-	printf("%-20s: \033[35m%s\033[0m \033[36m(protocol v%d)\033[0m\n", "Version", versionColored, resStr_versionPrt != NULL ? yyjson_get_int(resStr_versionPrt) : -1);
+	char* versionColored =
+		resStr_versionStr != NULL ? toSTable(yyjson_get_str(resStr_versionStr)) :
+		((bedrockResInfo.version != NULL && varient == 1) ? bedrockResInfo.version : "\033[90mOld\033[0m");
+
+	printf("%-20s: \033[35m%s\033[0m %s\033[36m(protocol v%d)\033[0m\n", "Version", versionColored,
+		(bedrockResInfo.edition == BEDROCK_MCEE && varient == 1) ? "Education Edition " : "",
+		resStr_versionPrt != NULL ? yyjson_get_int(resStr_versionPrt) :
+		((bedrockResInfo.protocol != 0 && varient == 1) ? bedrockResInfo.protocol : -1)
+	);
+
 	if (resStr_versionStr != NULL) free(versionColored);
 	}
 
@@ -262,14 +430,14 @@ int main(int argc, char** argv)
 	{
 		const char* resStr_descStrC = yyjson_get_str(resStr_desc);
 		char*  resStr_descStrColor  = toSTable(resStr_descStrC);
-		if(resStr_descStrColor == NULL)
+		if (resStr_descStrColor == NULL)
 		{
 			fprintf(stderr, "Could not convert with toSTable.\nExiting...\n");
 			return 1;
 		}
 		size_t resStr_descStrLen    = strlen(resStr_descStrColor);
 		char*  resStr_descStr       = calloc(resStr_descStrLen + 1, 1);
-		if(resStr_descStr == NULL)
+		if (resStr_descStr == NULL)
 		{
 			fprintf(stderr, "Could not calloc resStr_descStr.\nExiting...\n");
 			return 1;
@@ -283,17 +451,17 @@ int main(int argc, char** argv)
 		RS_DESC
 
 		free(resStr_descStr);
-	} else if(resStr_desc != NULL)
+	} else if (resStr_desc != NULL)
 	{
 #ifndef NO_MCTEXT_COMPONENTS
 		char* resStr_descStrNC = toSTableJSON(resStr_desc);
-		if(resStr_descStrNC == NULL)
+		if (resStr_descStrNC == NULL)
 		{
 			fprintf(stderr, "Could not convert with toSTableJSON.\nExiting...\n");
 			return 1;
 		}
 		char* resStr_descStr = toSTable(resStr_descStrNC);
-		if(resStr_descStr == NULL)
+		if (resStr_descStr == NULL)
 		{
 			fprintf(stderr, "Could not convert with toSTable.\nExiting...\n");
 			return 1;
@@ -310,6 +478,33 @@ int main(int argc, char** argv)
 #else
 		fprintf(stderr, "Description is pretty formatted. Thanks, Minecraft.\n");
 #endif
+	} else if ((bedrockResInfo.name != NULL && bedrockResInfo.desc != NULL) && varient == 1)
+	{
+		char* resStr_descStrNC = calloc(strlen(bedrockResInfo.name) + 1 + strlen(bedrockResInfo.desc) + 1, 1);
+		strcat(resStr_descStrNC, bedrockResInfo.name);
+		strcat(resStr_descStrNC, "\n");
+		strcat(resStr_descStrNC, bedrockResInfo.desc);
+
+		if (resStr_descStrNC == NULL)
+		{
+			fprintf(stderr, "Could not convert with toSTableJSON.\nExiting...\n");
+			return 1;
+		}
+		char* resStr_descStr = toSTable(resStr_descStrNC);
+		if (resStr_descStr == NULL)
+		{
+			fprintf(stderr, "Could not convert with toSTable.\nExiting...\n");
+			return 1;
+		}
+		size_t resStr_descNL = 1;
+
+
+		free(resStr_descStrNC);
+
+
+		RS_DESC
+
+		free(resStr_descStr);
 	}
 
 	printf("%-20s: %s%ums\033[0m\n", "Ping",
@@ -325,7 +520,7 @@ int main(int argc, char** argv)
 	int playersCur = resStr_playersCur != NULL ? yyjson_get_int(resStr_playersCur) : 0,
 	    playersMax = resStr_playersMax != NULL ? yyjson_get_int(resStr_playersMax) : 0;
 	printf("%-20s: %s", "Players",
-		((resStr_playersCur != NULL) && (resStr_playersMax != NULL)) ?
+		(resStr_playersCur != NULL && resStr_playersMax != NULL) ?
 		(playersCur >= ( playersMax      / 2) ?
 		(playersCur >= ((playersMax * 3) / 4) ?
 		(playersCur ==   playersMax
@@ -338,13 +533,18 @@ int main(int argc, char** argv)
 	// get info on players
 	if (resStr_playersCur != NULL)
 		printf("%d", playersCur);
+	else if (varient == 1)
+		printf("%d", bedrockResInfo.players);
 	else
 		printf("???");
 	if (resStr_playersMax != NULL)
-		printf("/%d\033[0m\n", playersMax);
+		printf("/%d", playersMax);
+	else if (varient == 1)
+		printf("/%d", bedrockResInfo.max);
 	else
-		printf("/???\033[0m\n");
+		printf("/???");
 
+	printf("\033[0m\n");
 	// scan players
 	if (resStr_playersLst != NULL)
 	{
@@ -379,11 +579,12 @@ int main(int argc, char** argv)
 
 	}
 
+	if (varient == 0)
 	printf("%-20s: %s\033[0m\n", "Secure Chat", resStr_secChat == NULL ? "\033[90mUnspecified\033[0m" : (yyjson_get_bool(resStr_secChat) ? "\033[32mEnforced\033[0m" : "\033[31mOff\033[0m"));
 
-	yyjson_doc_free(resStr_doc);
+	if (resStr_doc != NULL) yyjson_doc_free(resStr_doc);
 #ifndef CUSTOM_RESPONSE
-	free(resStr);
+	if (resStr != NULL) free(resStr);
 #endif
 	close(sockfd);
 
