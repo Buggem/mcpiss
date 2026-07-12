@@ -38,5 +38,5 @@ extern bool verbose;
 #define MEDIUM_PING 50
 
 
-#define VERSION_STRING "MCPISS 1.0"
+#define VERSION_STRING "MCPISS 1.1 - Bedrock Support Update"
 #define   USAGE_STRING "Usage: %s [-h|--help] [-V|--version] [-v|--verbose] [--ip X.X.X.X|--port XXXXX|--dns hostname]"
