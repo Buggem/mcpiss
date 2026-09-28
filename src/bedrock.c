@@ -25,7 +25,7 @@
 #include <errno.h>
 #include <stdint.h>
 
-#include <sys/mman.h>
+#include <sys/syscall.h>
 
 #include <sys/time.h>
 #include <time.h>
@@ -133,7 +133,7 @@ bedrockpong_t bedrock_sc_unconnectedPong(int sockfd)
 	int64_t resMsec  = 0;
 	ssize_t res_read = -1, resStr_read = -1;
 
-	int donebuffd = memfd_create("udpres", 0);
+	int donebuffd = syscall(SYS_memfd_create, "udpres", 0);
 	char buf[1 + 8 + 8 + sizeof(bedrock_magic) + 2 + 65535];
 	ssize_t donebuf_read = read(sockfd, buf, sizeof(buf));
 	if (donebuf_read == (ssize_t)-1)
