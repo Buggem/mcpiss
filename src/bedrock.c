@@ -198,7 +198,7 @@ bedrockpong_t bedrock_sc_unconnectedPong(int sockfd)
 	// Server ID String
 	read_full(donebuffd, &resLen, sizeof(resLen));
 	resLen = ntohs(resLen);
-	if (verbose) printf("resStr len: %u\n");
+	if (verbose) printf("resStr len: %u\n", resLen);
 
 	resStr = calloc(resLen+1, 1);
 	if ((resStr_read = read_full(donebuffd, resStr, resLen)) == (ssize_t)-1)
