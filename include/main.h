@@ -38,5 +38,5 @@ extern bool verbose;
 #define MEDIUM_PING 50
 
 
-#define VERSION_STRING "MCPISS 1.1 - Bedrock Support Update"
+#define VERSION_STRING "MCPISS 1.1.1 - Minecraft Pretty Info Scanning Software"
 #define   USAGE_STRING "Usage: %s [-h|--help] [-V|--version] [-v|--verbose] [--ip X.X.X.X|--port XXXXX|--dns hostname]"
