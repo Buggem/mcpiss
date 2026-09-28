@@ -3,6 +3,15 @@
 <!-- The Minecraft Pretty Info Scanning Software (MCPISS) -->
 **Scans Minecraft servers, in pretty fashion.**
 
+## Purpose
+Ever wanted to see what a server looks like from the terminal without having to launch your Minecraft client?
+
+No? Ok, well, you're getting a solution to that anyway.
+
+MCPISS is Minecraft server info scanning software - responding with the MoTD, your ping to the server, and more!
+
+With support for BOTH Java and Bedrock (RakNet, no NetherNet) MCPISS has all the features to get info on it you'll need - all in the comfort of your command-line.
+
 ## Building
 The software only supports Linux-based operating systems at this time, however this may change in the future.
 
